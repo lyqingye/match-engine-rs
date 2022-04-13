@@ -37,6 +37,26 @@ impl OrderBook {
         };
         Some(order)
     }
+
+    pub fn peek_best_bid(&self) -> Option<&Order> {
+        let best = self.bids.last()?;
+        self.orders.get(&best.oid)
+    }
+
+    pub fn peek_best_ask(&self) -> Option<&Order> {
+        let best = self.asks.last()?;
+        self.orders.get(&best.oid)
+    }
+
+    pub fn remove_best_bid(&mut self) -> Option<Order> {
+        let best = self.bids.pop_last()?;
+        self.orders.remove(&best.oid)
+    }
+
+    pub fn remove_best_ask(&mut self) -> Option<Order> {
+        let best = self.asks.pop_last()?;
+        self.orders.remove(&best.oid)
+    }
 }
 
 #[cfg(test)]
@@ -52,7 +72,25 @@ mod test{
             let mut order = Order::default();
             order.oid = i;
             order.price = Decimal::from(i);
+            order.side = OrderSide::Bid;
+            book.place_order(order.clone());
+
+            order.side = OrderSide::Ask;
             book.place_order(order);
         }
+        loop {
+            if let Some(bid) = book.remove_best_bid() {
+                println!("{} {}",bid.oid,bid.price)
+            }else {
+                break;
+            }
+        }
+        // loop {
+        //     if let Some(ask) = book.remove_best_ask() {
+        //         println!("{} {}",ask.oid,ask.price)
+        //     }else {
+        //         break;
+        //     }
+        // }
     }
 }

@@ -96,10 +96,10 @@ impl Order {
 
 #[derive(Debug,Clone,Copy,PartialEq,Eq)]
 pub struct OrderSortKey {
-    t: OrderType,
-    side: OrderSide,
-    price: Decimal,
-    oid: u64,
+    pub t: OrderType,
+    pub side: OrderSide,
+    pub price: Decimal,
+    pub oid: u64,
 }
 
 
@@ -118,18 +118,38 @@ impl Ord for OrderSortKey {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
             Ordering::Equal => {
-                let ordering = match self.price.cmp(&other.price) {
-                    Ordering::Less => Ordering::Less,
-                    Ordering::Greater => Ordering::Greater,
+                match (self.price.cmp(&other.price),self.side) {
+                    (Ordering::Less,OrderSide::Bid) => Ordering::Less,
+                    (Ordering::Less,OrderSide::Ask) => Ordering::Greater,
+                    (Ordering::Greater,OrderSide::Bid) => Ordering::Greater,
+                    (Ordering::Greater,OrderSide::Ask) => Ordering::Less,
                     // compare timestamp
-                    Ordering::Equal => self.oid.cmp(&other.oid).reverse()
-                };
-                if self.side == OrderSide::Bid {
-                    ordering
-                }else {
-                    ordering.reverse()
+                    (Ordering::Equal,_) => self.oid.cmp(&other.oid).reverse()
                 }
             },
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_order_sort_key() {
+        let k1 = OrderSortKey {
+            t: OrderType::Market,
+            side: OrderSide::Bid,
+            price: Decimal::from(1),
+            oid: 0
+        };
+        let k2 = OrderSortKey {
+            t: OrderType::Market,
+            side: OrderSide::Bid,
+            price: Decimal::from(2),
+            oid: 1
+        };
+        assert_eq!(Ordering::Less,k1.cmp(&k2));
+    }
+}
+
